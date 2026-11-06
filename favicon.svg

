@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="StudyHub app icon">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#7c6cff"/>
+      <stop offset="1" stop-color="#21d6a0"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="#101827"/>
+  <rect x="18" y="18" width="92" height="92" rx="20" fill="url(#g1)"/>
+  <path d="M38 44.5h52a6.5 6.5 0 0 1 6.5 6.5V77A11 11 0 0 1 85.5 88H38.5A11.5 11.5 0 0 1 27 76.5V51a6.5 6.5 0 0 1 6.5-6.5Zm15 12.5h24v10H53V57Zm0 18h18v10H53V75Z" fill="#fff" fill-opacity="0.92"/>
+  <circle cx="86" cy="46" r="10" fill="#e0f2fe" fill-opacity="0.8"/>
+</svg>

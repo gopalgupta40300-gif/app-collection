@@ -1,0 +1,130 @@
+const STORAGE_KEY = 'studyhub-app-collection';
+
+export class AppStorage {
+  constructor(storageKey = STORAGE_KEY) {
+    this.storageKey = storageKey;
+    this.db = null;
+    this.ready = this.initDb();
+    this.channel = 'studyhub-app-collection-sync';
+    this.bc = null;
+    try {
+      this.bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(this.channel) : null;
+    } catch {
+      this.bc = null;
+    }
+  }
+
+  async initDb() {
+    if (!('indexedDB' in window)) {
+      return;
+    }
+
+    try {
+      const request = indexedDB.open('studyhub-storage', 1);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('state')) {
+          db.createObjectStore('state');
+        }
+      };
+      this.db = await new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('IndexedDB unavailable'));
+      });
+    } catch (error) {
+      this.db = null;
+    }
+  }
+
+  async read() {
+    await this.ready;
+    try {
+      if (this.db) {
+        const value = await new Promise((resolve, reject) => {
+          const tx = this.db.transaction('state', 'readonly');
+          const store = tx.objectStore('state');
+          const req = store.get(this.storageKey);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error || new Error('IndexedDB read failed'));
+        });
+        if (value) {
+          return value;
+        }
+      }
+    } catch (error) {
+      // Fall back to localStorage below.
+    }
+
+    try {
+      const raw = window.localStorage.getItem(this.storageKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async write(value) {
+    await this.ready;
+    const payload = {
+      ...value,
+      savedAt: Date.now()
+    };
+
+    let savedLocally = false;
+
+    try {
+      if (this.db) {
+        await new Promise((resolve, reject) => {
+          const tx = this.db.transaction('state', 'readwrite');
+          const store = tx.objectStore('state');
+          const req = store.put(payload, this.storageKey);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error || new Error('IndexedDB write failed'));
+        });
+        savedLocally = true;
+      }
+    } catch (error) {
+      savedLocally = false;
+    }
+
+    try {
+      window.localStorage.setItem(this.storageKey, JSON.stringify(payload));
+      savedLocally = true;
+    } catch (error) {
+      if (savedLocally === false) {
+        throw error;
+      }
+    }
+
+    if (this.bc) {
+      this.bc.postMessage({ type: 'sync', payload });
+    }
+    window.dispatchEvent(new CustomEvent('studyhub-sync', { detail: payload }));
+    return payload;
+  }
+
+  async clear() {
+    await this.ready;
+    try {
+      if (this.db) {
+        await new Promise((resolve, reject) => {
+          const tx = this.db.transaction('state', 'readwrite');
+          const store = tx.objectStore('state');
+          const req = store.delete(this.storageKey);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error || new Error('IndexedDB delete failed'));
+        });
+      }
+    } catch (error) {
+      // ignore cleanup failures
+    }
+
+    try {
+      localStorage.removeItem(this.storageKey);
+    } catch (error) {
+      // ignore cleanup failures
+    }
+  }
+}
+
+export default AppStorage;

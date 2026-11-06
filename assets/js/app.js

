@@ -1,0 +1,832 @@
+import { iconLibrary, renderIcon, iconNames } from './icons.js';
+import AppStorage from './storage.js';
+
+const STORAGE_URL = './';
+const defaultState = {
+  schemaVersion: 1,
+  seeded: false,
+  apps: [],
+  filters: {
+    search: '',
+    category: 'all',
+    favoriteOnly: false,
+    sort: 'updated-desc'
+  },
+  ui: {
+    theme: 'dark',
+    pricingMode: 'monthly',
+    viewMode: 'grid'
+  },
+  drafts: {
+    appForm: {}
+  },
+  meta: {
+    lastSavedAt: 0,
+    totalImports: 0
+  }
+};
+
+const sampleApps = [
+  { id: crypto.randomUUID(), name: 'Google', description: 'Search everything and discover the web.', category: 'Search & AI', tags: ['search', 'web'], url: 'https://google.com', icon: 'globe', favorite: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: crypto.randomUUID(), name: 'GitHub', description: 'Track code, repos, and pull requests.', category: 'Dev & Code', tags: ['code', 'projects'], url: 'https://github.com', icon: 'code', favorite: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: crypto.randomUUID(), name: 'ChatGPT', description: 'AI chats for writing and problem solving.', category: 'Search & AI', tags: ['ai', 'assistant'], url: 'https://chat.openai.com', icon: 'ai', favorite: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: crypto.randomUUID(), name: 'Notion', description: 'Plan notes, docs, and ideas in one place.', category: 'Productivity', tags: ['docs', 'notes'], url: 'https://notion.so', icon: 'note', favorite: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+];
+
+const storage = new AppStorage();
+const modal = document.getElementById('appModal');
+const importModal = document.getElementById('importModal');
+const appGrid = document.getElementById('appGrid');
+const savedIndicator = document.getElementById('savedIndicator');
+const searchInput = document.getElementById('searchInput');
+const categoryFilter = document.getElementById('categoryFilter');
+const sortSelect = document.getElementById('sortSelect');
+const appForm = document.getElementById('appForm');
+const iconPickerGrid = document.getElementById('iconPickerGrid');
+const iconSearchInput = document.getElementById('iconSearchInput');
+const appNameInput = document.getElementById('appName');
+const appUrlInput = document.getElementById('appUrl');
+const appCategorySelect = document.getElementById('appCategory');
+const appDescriptionInput = document.getElementById('appDescription');
+const selectedIconPreview = document.getElementById('selectedIconPreview');
+const favoriteToggleField = document.getElementById('favoriteToggleField');
+const toastContainer = document.getElementById('toastContainer');
+
+const categoryOptions = ['Search & AI', 'Dev & Code', 'Productivity', 'Learning', 'Career', 'Social', 'Finance', 'Utilities'];
+let state = structuredClone(defaultState);
+let pendingDelete = null;
+let pendingDeleteTimer = null;
+let selectedIcon = 'globe';
+let editingId = null;
+let pendingImport = null;
+let importMode = 'merge';
+
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+function notifySaved() {
+  savedIndicator.classList.add('visible');
+  clearTimeout(notifySaved._timer);
+  notifySaved._timer = setTimeout(() => savedIndicator.classList.remove('visible'), 1200);
+}
+
+function showToast(message, detail = '', { error = false, actionText = '', onAction } = {}) {
+  const toast = document.createElement('div');
+  toast.className = `toast ${error ? 'error' : ''}`;
+  toast.innerHTML = `
+    <div class="toast-info">
+      <div class="toast-icon">${renderIcon(error ? 'alert' : 'check', 16)}</div>
+      <div>
+        <strong>${escapeHtml(message)}</strong>
+        ${detail ? `<small>${escapeHtml(detail)}</small>` : ''}
+      </div>
+    </div>
+    ${actionText ? `<button class="toast-action" type="button">${escapeHtml(actionText)}</button>` : ''}
+  `;
+  const actionBtn = toast.querySelector('.toast-action');
+  if (actionBtn && onAction) {
+    actionBtn.addEventListener('click', onAction);
+  }
+  toastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 5000);
+}
+
+function ensureDefaults() {
+  state = {
+    ...structuredClone(defaultState),
+    ...state,
+    filters: { ...defaultState.filters, ...(state.filters || {}) },
+    ui: { ...defaultState.ui, ...(state.ui || {}) },
+    drafts: { ...defaultState.drafts, ...(state.drafts || {}) },
+    meta: { ...defaultState.meta, ...(state.meta || {}) }
+  };
+}
+
+function makeCategoryOptions() {
+  const options = ['all', ...categoryOptions];
+  categoryFilter.innerHTML = options
+    .map((entry) => `<option value="${escapeHtml(entry)}">${entry === 'all' ? 'All categories' : entry}</option>`)
+    .join('');
+
+  appCategorySelect.innerHTML = categoryOptions
+    .map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)
+    .join('');
+
+  categoryFilter.value = state.filters.category || 'all';
+  appCategorySelect.value = categoryOptions[0];
+}
+
+function parseIconName(name) {
+  if (!name) return 'app';
+  if (iconLibrary[name]) return name;
+  if (name.startsWith('data:image')) return 'image';
+  return 'app';
+}
+
+function renderIconTile(iconValue, size = 24, className = '') {
+  const normalized = parseIconName(iconValue);
+  if (typeof iconValue === 'string' && iconValue.startsWith('data:image')) {
+    return `<img src="${iconValue}" alt="" width="${size}" height="${size}" class="${className}" />`;
+  }
+  return renderIcon(normalized, size, className);
+}
+
+function renderSelectedIcon() {
+  const preview = selectedIcon && selectedIcon.startsWith('data:image')
+    ? `<img src="${selectedIcon}" alt="" />`
+    : renderIconTile(selectedIcon, 30, 'selected-icon');
+  selectedIconPreview.innerHTML = preview;
+}
+
+function renderIconPicker() {
+  const search = iconSearchInput.value.trim().toLowerCase();
+  const names = iconNames.filter((name) => name.toLowerCase().includes(search));
+
+  iconPickerGrid.innerHTML = names.map((name) => {
+    const isSelected = parseIconName(selectedIcon) === name;
+    return `<button type="button" class="icon-option ${isSelected ? 'selected' : ''}" data-icon-name="${escapeHtml(name)}" title="${escapeHtml(name)}">${renderIconTile(name, 20, '')}</button>`;
+  }).join('');
+
+  iconPickerGrid.querySelectorAll('.icon-option').forEach((button) => {
+    button.addEventListener('click', () => {
+      const chosen = button.dataset.iconName;
+      selectedIcon = chosen;
+      renderSelectedIcon();
+      renderIconPicker();
+    });
+  });
+}
+
+function setTheme(theme) {
+  document.body.classList.toggle('light', theme === 'light');
+  const label = document.getElementById('themeLabel');
+  label.textContent = theme === 'light' ? 'Light' : 'Dark';
+}
+
+function saveState() {
+  state.meta.lastSavedAt = Date.now();
+  state.ui.theme = document.body.classList.contains('light') ? 'light' : 'dark';
+  return storage.write(state)
+    .then(() => {
+      notifySaved();
+      return true;
+    })
+    .catch((error) => {
+      showToast('Write failed', 'Your browser storage is full or unavailable.', { error: true });
+      console.error(error);
+      return false;
+    });
+}
+
+function updateFiltersFromState() {
+  searchInput.value = state.filters.search || '';
+  categoryFilter.value = state.filters.category || 'all';
+  sortSelect.value = state.filters.sort || 'updated-desc';
+  document.querySelectorAll('.toggle-ghost[data-pricing]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.pricing === state.ui.pricingMode);
+  });
+  document.querySelectorAll('.toggle-ghost[data-view]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.view === state.ui.viewMode);
+  });
+  document.querySelectorAll('.view-btn').forEach((button) => {
+    button.classList.toggle('active', button.dataset.view === state.ui.viewMode);
+  });
+  const favoriteButton = document.querySelector('#favoritesFilter button');
+  // no-op; re-rendered elsewhere
+}
+
+function applyDraftToForm(draft) {
+  if (!draft) return;
+  appNameInput.value = draft.name || '';
+  appDescriptionInput.value = draft.description || '';
+  appCategorySelect.value = draft.category || categoryOptions[0];
+  appTagsInput.value = draft.tags || '';
+  appUrlInput.value = draft.url || '';
+  selectedIcon = draft.icon || 'globe';
+  favoriteToggleField.dataset.favorite = String(Boolean(draft.favorite));
+  favoriteToggleField.classList.toggle('active', Boolean(draft.favorite));
+  favoriteToggleField.textContent = Boolean(draft.favorite) ? 'Favorite' : 'Not favorite';
+  renderSelectedIcon();
+  renderIconPicker();
+}
+
+function getVisibleApps() {
+  const query = (state.filters.search || '').trim().toLowerCase();
+  let apps = [...state.apps];
+
+  if (state.filters.favoriteOnly) {
+    apps = apps.filter((app) => app.favorite);
+  }
+
+  if (state.filters.category && state.filters.category !== 'all') {
+    apps = apps.filter((app) => app.category === state.filters.category);
+  }
+
+  if (query) {
+    apps = apps.filter((app) => {
+      const text = [app.name, app.description, app.category, ...(app.tags || [])].join(' ').toLowerCase();
+      return text.includes(query);
+    });
+  }
+
+  apps.sort((a, b) => {
+    if (state.filters.sort === 'name-asc') {
+      return a.name.localeCompare(b.name);
+    }
+    if (state.filters.sort === 'favorite-first') {
+      return Number(b.favorite) - Number(a.favorite) || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    }
+    if (state.filters.sort === 'created-desc') {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+
+  return apps;
+}
+
+function renderFavoritesFilter() {
+  const favoritesFilter = document.getElementById('favoritesFilter');
+  const active = state.filters.favoriteOnly;
+  favoritesFilter.innerHTML = `
+    <button type="button" class="chip-btn ${active ? 'active' : ''}" id="favoritesChip">
+      ${renderIcon(active ? 'starFill' : 'star', 14)} Favorites
+    </button>
+  `;
+  document.getElementById('favoritesChip').addEventListener('click', () => {
+    state.filters.favoriteOnly = !state.filters.favoriteOnly;
+    renderAll();
+    saveState();
+  });
+}
+
+function renderStats() {
+  document.getElementById('statApps').textContent = String(state.apps.length);
+  document.getElementById('statFavorites').textContent = String(state.apps.filter((app) => app.favorite).length);
+  document.getElementById('statCategories').textContent = String(new Set(state.apps.map((app) => app.category)).size);
+  document.getElementById('statUpdated').textContent = String(state.apps.filter((app) => app.updatedAt).length);
+}
+
+function renderAppList() {
+  const apps = getVisibleApps();
+  appGrid.classList.toggle('list-view', state.ui.viewMode === 'list');
+
+  if (!apps.length) {
+    appGrid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <div style="font-size: 2rem;">📁</div>
+        <h4>No apps match your filters</h4>
+        <p>Try a different search or add a new app.</p>
+      </div>
+    `;
+    return;
+  }
+
+  appGrid.innerHTML = apps.map((app) => {
+    const iconMarkup = renderIconTile(app.icon || 'globe', 24, '');
+    const favoriteMarkup = app.favorite ? 'favorite' : 'inactive';
+    const shortUrl = (() => {
+      try {
+        return new URL(app.url).hostname.replace('www.', '');
+      } catch {
+        return 'website';
+      }
+    })();
+    const tagMarkup = (app.tags || []).slice(0, 3).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+    return `
+      <article class="app-card ${app.favorite ? 'favorite' : ''} ${state.ui.viewMode === 'list' ? 'list-style' : ''}" data-id="${escapeHtml(app.id)}">
+        <div class="card-top">
+          <div class="app-icon-tile">${iconMarkup}</div>
+          <button type="button" class="card-menu-toggle" aria-label="Open app actions">${renderIcon('menu', 16)}</button>
+          <div class="card-menu">
+            <button type="button" class="menu-item" data-action="edit" data-id="${escapeHtml(app.id)}">${renderIcon('edit', 14)} Edit</button>
+            <button type="button" class="menu-item danger" data-action="delete" data-id="${escapeHtml(app.id)}">${renderIcon('trash', 14)} Delete</button>
+          </div>
+        </div>
+
+        <div class="app-body">
+          <h4>${escapeHtml(app.name)}</h4>
+          <p>${escapeHtml(app.description || 'No description yet')}</p>
+          <div class="tag-list">${tagMarkup || '<span class="tag">General</span>'}</div>
+          <div class="app-meta">
+            <button type="button" class="favorite-toggle ${favoriteMarkup}" data-id="${escapeHtml(app.id)}" aria-label="Toggle favorite">${renderIcon(app.favorite ? 'starFill' : 'star', 16)}</button>
+            <a class="app-link" href="${escapeHtml(app.url)}" target="_blank" rel="noreferrer noopener">${renderIcon('externalLink', 14)} ${escapeHtml(shortUrl)}</a>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  appGrid.querySelectorAll('.card-menu-toggle').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const card = button.closest('.app-card');
+      card.classList.toggle('open-menu');
+    });
+  });
+
+  appGrid.querySelectorAll('.menu-item').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      const { action, id } = button.dataset;
+      if (action === 'edit') startEdit(id);
+      if (action === 'delete') deleteApp(id);
+    });
+  });
+
+  appGrid.querySelectorAll('.favorite-toggle').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      toggleFavorite(button.dataset.id);
+    });
+  });
+
+  appGrid.querySelectorAll('.app-card').forEach((card) => {
+    card.addEventListener('click', (event) => {
+      if (event.target.closest('.card-menu-toggle') || event.target.closest('.menu-item') || event.target.closest('.favorite-toggle')) return;
+      const id = card.dataset.id;
+      const app = state.apps.find((item) => item.id === id);
+      if (app) {
+        window.open(app.url, '_blank', 'noopener');
+      }
+    });
+  });
+}
+
+function renderAll() {
+  ensureDefaults();
+  setTheme(state.ui.theme || 'dark');
+  updateFiltersFromState();
+  renderFavoritesFilter();
+  renderAppList();
+  renderStats();
+  makeCategoryOptions();
+  renderSelectedIcon();
+  renderIconPicker();
+}
+
+function seedStateIfNeeded() {
+  if (state.seeded) return;
+  state.apps = sampleApps.map((app) => ({
+    ...app,
+    createdAt: app.createdAt || new Date().toISOString(),
+    updatedAt: app.updatedAt || new Date().toISOString(),
+    favorite: Boolean(app.favorite)
+  }));
+  state.seeded = true;
+  state.meta.lastSavedAt = Date.now();
+  saveState();
+}
+
+function addAppFromForm(event) {
+  event.preventDefault();
+  const formData = new FormData(appForm);
+  const name = String(formData.get('name') || '').trim();
+  const url = String(formData.get('url') || '').trim();
+  const category = String(appCategorySelect.value || '').trim();
+  const description = appDescriptionInput.value.trim();
+  const tags = appTagsInput.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+
+  if (!name || !url || !category) {
+    showToast('Validation failed', 'Name, URL, and category are required.', { error: true });
+    return;
+  }
+
+  const urlPattern = /^https?:\/\//i;
+  if (!urlPattern.test(url)) {
+    showToast('Validation failed', 'Use a valid http or https URL.', { error: true });
+    return;
+  }
+
+  const payload = {
+    id: editingId || crypto.randomUUID(),
+    name,
+    description,
+    category,
+    tags,
+    url,
+    icon: selectedIcon || 'globe',
+    favorite: favoriteToggleField.dataset.favorite === 'true',
+    createdAt: editingId ? state.apps.find((app) => app.id === editingId)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (editingId) {
+    state.apps = state.apps.map((app) => (app.id === editingId ? payload : app));
+  } else {
+    state.apps.push(payload);
+  }
+
+  state.drafts.appForm = {};
+  editingId = null;
+  appForm.reset();
+  selectedIcon = 'globe';
+  favoriteToggleField.dataset.favorite = 'true';
+  favoriteToggleField.classList.add('active');
+  favoriteToggleField.textContent = 'Favorite';
+  closeModal('app');
+  renderAll();
+  saveState();
+  showToast(editingId ? 'App updated' : 'App added', 'Your changes have been saved.', { error: false });
+}
+
+function openModal(key) {
+  const modalElement = key === 'app' ? modal : importModal;
+  modalElement.classList.add('open');
+  modalElement.setAttribute('aria-hidden', 'false');
+}
+
+function closeModal(key) {
+  const modalElement = key === 'app' ? modal : importModal;
+  modalElement.classList.remove('open');
+  modalElement.setAttribute('aria-hidden', 'true');
+}
+
+function startAdd() {
+  editingId = null;
+  appForm.reset();
+  selectedIcon = 'globe';
+  appCategorySelect.value = categoryOptions[0];
+  favoriteToggleField.dataset.favorite = 'true';
+  favoriteToggleField.classList.add('active');
+  favoriteToggleField.textContent = 'Favorite';
+  renderSelectedIcon();
+  renderIconPicker();
+  document.getElementById('modalTitle').textContent = 'Add app';
+  openModal('app');
+}
+
+function startEdit(id) {
+  const app = state.apps.find((item) => item.id === id);
+  if (!app) return;
+  editingId = id;
+  selectedIcon = app.icon || 'globe';
+  appNameInput.value = app.name || '';
+  appDescriptionInput.value = app.description || '';
+  appCategorySelect.value = app.category || categoryOptions[0];
+  appUrlInput.value = app.url || '';
+  appTagsInput.value = (app.tags || []).join(', ');
+  favoriteToggleField.dataset.favorite = String(Boolean(app.favorite));
+  favoriteToggleField.classList.toggle('active', Boolean(app.favorite));
+  favoriteToggleField.textContent = Boolean(app.favorite) ? 'Favorite' : 'Not favorite';
+  document.getElementById('modalTitle').textContent = 'Edit app';
+  renderSelectedIcon();
+  renderIconPicker();
+  openModal('app');
+}
+
+function deleteApp(id) {
+  const app = state.apps.find((item) => item.id === id);
+  if (!app) return;
+
+  pendingDelete = app;
+  state.apps = state.apps.filter((item) => item.id !== id);
+  renderAll();
+  saveState();
+  showToast('App deleted', 'The deleted app can be restored for 5 seconds.', {
+    actionText: 'Undo',
+    onAction: () => {
+      if (!pendingDelete) return;
+      state.apps.push(pendingDelete);
+      pendingDelete = null;
+      renderAll();
+      saveState();
+      showToast('Deletion undone', 'The app has been restored.', {});
+    }
+  });
+
+  clearTimeout(pendingDeleteTimer);
+  pendingDeleteTimer = setTimeout(() => {
+    pendingDelete = null;
+  }, 5000);
+}
+
+function toggleFavorite(id) {
+  state.apps = state.apps.map((app) => app.id === id ? { ...app, favorite: !app.favorite, updatedAt: new Date().toISOString() } : app);
+  renderAll();
+  saveState();
+}
+
+function exportCollection() {
+  const payload = JSON.stringify({
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    apps: state.apps,
+    ui: state.ui,
+    filters: state.filters
+  }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'app-collection-export.json';
+  anchor.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported', 'Your app collection is ready to download.');
+}
+
+function validateImportedData(data) {
+  if (!data || typeof data !== 'object') return 'The import file is not a valid JSON object.';
+  if (!Array.isArray(data.apps)) return 'The import JSON must include an apps array.';
+  const invalid = data.apps.find((app) => !app || typeof app !== 'object' || !app.name || !app.url);
+  if (invalid) return 'One or more apps are missing a name or URL.';
+  return null;
+}
+
+function previewImport(data) {
+  if (!data) {
+    document.getElementById('importPreview').innerHTML = 'No file selected yet.';
+    return;
+  }
+  const count = Array.isArray(data.apps) ? data.apps.length : 0;
+  document.getElementById('importPreview').innerHTML = `<strong>${count}</strong> app${count === 1 ? '' : 's'} available to import.`;
+}
+
+function handleImportFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result));
+      const error = validateImportedData(parsed);
+      if (error) {
+        showToast('Import invalid', error, { error: true });
+        return;
+      }
+      pendingImport = parsed;
+      previewImport(parsed);
+    } catch (error) {
+      showToast('Import invalid', 'The JSON could not be parsed.', { error: true });
+    }
+  };
+  reader.readAsText(file);
+}
+
+function applyImport(mode = 'merge') {
+  if (!pendingImport) {
+    showToast('Nothing to import', 'Select a JSON file first.', { error: true });
+    return;
+  }
+
+  const importedApps = pendingImport.apps.map((app) => ({
+    ...app,
+    id: app.id || crypto.randomUUID(),
+    category: app.category || categoryOptions[0],
+    tags: Array.isArray(app.tags) ? app.tags : [],
+    favorite: Boolean(app.favorite),
+    icon: app.icon || 'globe',
+    createdAt: app.createdAt || new Date().toISOString(),
+    updatedAt: app.updatedAt || new Date().toISOString()
+  }));
+
+  if (mode === 'replace') {
+    state.apps = importedApps;
+    state.seeded = true;
+  } else {
+    const existingMap = new Map(state.apps.map((app) => [app.id, app]));
+    importedApps.forEach((app) => {
+      existingMap.set(app.id, app);
+    });
+    state.apps = [...existingMap.values()];
+  }
+
+  state.meta.totalImports += 1;
+  closeModal('import');
+  renderAll();
+  saveState();
+  showToast('Import complete', `${importedApps.length} app${importedApps.length === 1 ? '' : 's'} imported.`, {});
+  pendingImport = null;
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importPreview').innerHTML = '';
+}
+
+function resetToDefaults() {
+  const ok = window.confirm('Reset the collection to defaults? This clears all saved apps and preferences.');
+  if (!ok) return;
+  state = structuredClone(defaultState);
+  state.seeded = false;
+  seedStateIfNeeded();
+  renderAll();
+  saveState();
+  showToast('Reset complete', 'Defaults restored.');
+}
+
+function bindEvents() {
+  document.getElementById('addAppBtn').addEventListener('click', startAdd);
+  document.getElementById('exportBtn').addEventListener('click', exportCollection);
+  document.getElementById('importBtn').addEventListener('click', () => openModal('import'));
+  document.getElementById('resetBtn').addEventListener('click', resetToDefaults);
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    state.ui.theme = state.ui.theme === 'light' ? 'dark' : 'light';
+    setTheme(state.ui.theme);
+    renderAll();
+    saveState();
+  });
+
+  document.querySelectorAll('[data-close-modal]').forEach((button) => {
+    button.addEventListener('click', () => closeModal(button.dataset.closeModal));
+  });
+
+  window.addEventListener('click', (event) => {
+    if (!event.target.closest('.card-menu-toggle') && !event.target.closest('.card-menu')) {
+      document.querySelectorAll('.app-card.open-menu').forEach((card) => card.classList.remove('open-menu'));
+    }
+  });
+
+  const appClose = document.querySelector('[data-close-modal="app"]');
+  if (appClose) appClose.addEventListener('click', () => closeModal('app'));
+
+  appForm.addEventListener('submit', addAppFromForm);
+  appForm.addEventListener('input', () => {
+    const formState = {
+      name: appNameInput.value,
+      description: appDescriptionInput.value,
+      category: appCategorySelect.value,
+      tags: appTagsInput.value,
+      url: appUrlInput.value,
+      icon: selectedIcon,
+      favorite: favoriteToggleField.dataset.favorite === 'true'
+    };
+    state.drafts.appForm = formState;
+    saveState();
+  });
+
+  searchInput.addEventListener('input', (event) => {
+    state.filters.search = event.target.value;
+    renderAll();
+    saveState();
+  });
+
+  categoryFilter.addEventListener('change', (event) => {
+    state.filters.category = event.target.value;
+    renderAll();
+    saveState();
+  });
+
+  sortSelect.addEventListener('change', (event) => {
+    state.filters.sort = event.target.value;
+    renderAll();
+    saveState();
+  });
+
+  document.querySelectorAll('.toggle-ghost[data-pricing]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.ui.pricingMode = button.dataset.pricing;
+      document.querySelectorAll('.toggle-ghost[data-pricing]').forEach((item) => item.classList.toggle('active', item.dataset.pricing === state.ui.pricingMode));
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('.toggle-ghost[data-view]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.ui.viewMode = button.dataset.view;
+      document.querySelectorAll('.toggle-ghost[data-view]').forEach((item) => item.classList.toggle('active', item.dataset.view === state.ui.viewMode));
+      document.querySelectorAll('.view-btn').forEach((item) => item.classList.toggle('active', item.dataset.view === state.ui.viewMode));
+      renderAppList();
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('.view-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.ui.viewMode = button.dataset.view;
+      renderAll();
+      saveState();
+    });
+  });
+
+  favoriteToggleField.addEventListener('click', () => {
+    const current = favoriteToggleField.dataset.favorite === 'true';
+    favoriteToggleField.dataset.favorite = String(!current);
+    favoriteToggleField.classList.toggle('active', !current);
+    favoriteToggleField.textContent = !current ? 'Favorite' : 'Not favorite';
+    state.drafts.appForm.favorite = !current;
+  });
+
+  document.getElementById('monogramBtn').addEventListener('click', () => {
+    const name = appNameInput.value.trim() || 'A';
+    const first = name.slice(0, 1).toUpperCase();
+    selectedIcon = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#dfe7ff"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#4b5563" font-size="56" font-family="sans-serif" font-weight="700">${first}</text></svg>`)}`;
+    renderSelectedIcon();
+  });
+
+  document.getElementById('customIconUpload').addEventListener('change', async (event) => {
+    const [file] = event.target.files || [];
+    if (!file) return;
+    const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+    if (!validTypes.includes(file.type)) {
+      showToast('Image type not allowed', 'Use PNG, JPG, WEBP, or SVG.', { error: true });
+      return;
+    }
+    if (file.size > 256 * 1024) {
+      showToast('File too large', 'Custom icons must be 256KB or smaller.', { error: true });
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      selectedIcon = dataUrl;
+      renderSelectedIcon();
+      showToast('Custom icon ready', 'The uploaded icon will be saved with the app.');
+    } catch (error) {
+      showToast('Upload failed', 'The file could not be processed.', { error: true });
+    }
+  });
+
+  document.getElementById('faviconFetchBtn').addEventListener('click', async () => {
+    try {
+      const url = new URL(appUrlInput.value || 'https://example.com');
+      const domain = url.origin;
+      const faviconUrl = `${domain}/favicon.ico`;
+      selectedIcon = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="#eef2ff"/><path d="M38 84V44h44c12.7 0 23 10.3 23 23 0 12.7-10.3 23-23 23H38Zm14-15h30c6.6 0 12-5.4 12-12s-5.4-12-12-12H52v24Z" fill="#4f46e5"/><circle cx="46" cy="44" r="7" fill="#7c6cff"/></svg>`)}`;
+      const test = new Image();
+      test.onload = () => {
+        selectedIcon = faviconUrl;
+        renderSelectedIcon();
+      };
+      test.onerror = () => {
+        renderSelectedIcon();
+      };
+      test.src = faviconUrl;
+    } catch (error) {
+      showToast('Could not fetch favicon', 'Using the default monogram icon instead.', { error: true });
+    }
+  });
+
+  iconSearchInput.addEventListener('input', renderIconPicker);
+
+  document.getElementById('mergeImportBtn').addEventListener('click', () => applyImport('merge'));
+  document.getElementById('replaceImportBtn').addEventListener('click', () => applyImport('replace'));
+  document.getElementById('importFileInput').addEventListener('change', handleImportFile);
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== 'studyhub-app-collection') return;
+    try {
+      const incoming = JSON.parse(event.newValue || '{}');
+      if (incoming && incoming.savedAt && incoming.savedAt > (state.meta.lastSavedAt || 0)) {
+        state = incoming;
+        renderAll();
+      }
+    } catch (error) {
+      console.warn('Cross-tab sync ignored invalid data', error);
+    }
+  });
+
+  if (typeof BroadcastChannel !== 'undefined') {
+    const channel = new BroadcastChannel('studyhub-app-collection-sync');
+    channel.addEventListener('message', (event) => {
+      const incoming = event.data?.payload;
+      if (!incoming || !incoming.savedAt) return;
+      if (incoming.savedAt <= (state.meta.lastSavedAt || 0)) return;
+      state = incoming;
+      renderAll();
+    });
+  }
+
+  if ('storage' in navigator && navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error || new Error('File read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function init() {
+  ensureDefaults();
+  makeCategoryOptions();
+  bindEvents();
+  try {
+    const loaded = await storage.read();
+    if (loaded && loaded.apps) {
+      state = { ...structuredClone(defaultState), ...loaded, filters: { ...defaultState.filters, ...(loaded.filters || {}) }, ui: { ...defaultState.ui, ...(loaded.ui || {}) }, drafts: { ...defaultState.drafts, ...(loaded.drafts || {}) }, meta: { ...defaultState.meta, ...(loaded.meta || {}) } };
+    }
+  } catch (error) {
+    console.warn('Unable to load app state', error);
+  }
+
+  if (!state.seeded) {
+    seedStateIfNeeded();
+  }
+
+  renderAll();
+  if (state.drafts.appForm) {
+    applyDraftToForm(state.drafts.appForm);
+  }
+}
+
+init();
+
+const appTagsInput = document.getElementById('appTags');

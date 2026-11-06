@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#181b2f" />
+    <meta name="description" content="Persistent app collection dashboard" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <title>StudyHub Collection</title>
+    <style>
+      :root {
+        --bg: #0d111b;
+        --bg-elevated: #131b2f;
+        --panel: rgba(17, 24, 39, 0.88);
+        --panel-strong: #111827;
+        --card: rgba(21, 29, 46, 0.9);
+        --card-soft: rgba(27, 34, 52, 0.9);
+        --border: rgba(148, 163, 184, 0.18);
+        --border-strong: rgba(99, 102, 241, 0.45);
+        --text: #edf2ff;
+        --muted: #a3b1c7;
+        --muted-2: #7f8ea8;
+        --accent: #7c6cff;
+        --accent-strong: #5b4df6;
+        --accent-warm: #ff7a74;
+        --accent-green: #21d6a0;
+        --shadow: 0 16px 40px rgba(15, 23, 42, 0.5);
+        --saved: #38d39f;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --chip: rgba(124, 108, 255, 0.12);
+        --chip-active: rgba(124, 108, 255, 0.28);
+      }
+
+      body.light {
+        --bg: #edf3ff;
+        --bg-elevated: #ffffff;
+        --panel: rgba(255, 255, 255, 0.9);
+        --panel-strong: #f7f9ff;
+        --card: rgba(255, 255, 255, 0.98);
+        --card-soft: rgba(240, 245, 255, 0.9);
+        --border: rgba(99, 102, 241, 0.14);
+        --border-strong: rgba(91, 77, 246, 0.4);
+        --text: #0f172a;
+        --muted: #46536e;
+        --muted-2: #586886;
+        --accent: #5b4df6;
+        --accent-strong: #4539d7;
+        --accent-warm: #ec6c63;
+        --accent-green: #10b981;
+        --shadow: 0 12px 28px rgba(91, 77, 246, 0.12);
+        --saved: #0ea56a;
+        --danger: #dc2626;
+        --warning: #d97706;
+        --chip: rgba(91, 77, 246, 0.08);
+        --chip-active: rgba(91, 77, 246, 0.14);
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: radial-gradient(circle at top, rgba(124,108,255,0.18), transparent 38%), var(--bg);
+        color: var(--text);
+        font-family: Inter, "Segoe UI", sans-serif;
+      }
+      body {
+        transition: background 0.25s ease, color 0.25s ease;
+      }
+      button, input, select, textarea {
+        font: inherit;
+      }
+      a { color: inherit; text-decoration: none; }
+      [hidden] { display: none !important; }
+
+      .app-shell {
+        width: min(1220px, calc(100% - 32px));
+        margin: 24px auto 60px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        background: rgba(17, 24, 39, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 16px 18px;
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 18px;
+        z-index: 30;
+      }
+      body.light .topbar {
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+      .brand-mark {
+        width: 48px;
+        height: 48px;
+        border-radius: 15px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, var(--accent), var(--accent-green));
+        box-shadow: 0 12px 26px rgba(91, 77, 246, 0.35);
+        color: white;
+      }
+      .brand-copy {
+        min-width: 0;
+      }
+      .brand-copy strong {
+        display: block;
+        font-size: 1.1rem;
+        letter-spacing: -0.03em;
+      }
+      .brand-copy span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.76rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .action-btn,
+      .chip-btn,
+      .toggle-ghost,
+      .view-btn,
+      .icon-option,
+      .tag-remove,
+      .menu-item,
+      .toast-action,
+      .ghost-link,
+      .mini-button {
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+      }
+
+      .action-btn {
+        border: 1px solid var(--border);
+        background: var(--card-soft);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 9px 12px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+      .action-btn:hover,
+      .chip-btn:hover,
+      .toggle-ghost:hover,
+      .view-btn:hover,
+      .icon-option:hover,
+      .menu-item:hover,
+      .toast-action:hover,
+      .ghost-link:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        border-color: transparent;
+        color: white;
+        font-weight: 700;
+      }
+
+      .saved-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(56, 211, 159, 0.08);
+        color: var(--saved);
+        border: 1px solid rgba(56, 211, 159, 0.28);
+        opacity: 0;
+        transform: translateY(3px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+      .saved-indicator.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 22px;
+        margin-top: 22px;
+      }
+
+      .sidepanel,
+      .main-panel {
+        background: rgba(15, 23, 42, 0.36);
+        border: 1px solid var(--border);
+        border-radius: 26px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      body.light .sidepanel,
+      body.light .main-panel {
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .panel-header h3 {
+        margin: 0;
+        font-size: 0.86rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .search-wrap {
+        position: relative;
+        margin-bottom: 12px;
+      }
+      .search-wrap input {
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 12px 14px 12px 38px;
+        outline: none;
+      }
+      .search-wrap .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+      }
+
+      .filter-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .chip-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--chip);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      .chip-btn.active {
+        background: var(--chip-active);
+        border-color: var(--border-strong);
+      }
+
+      .sidegrid {
+        display: grid;
+        gap: 12px;
+      }
+      .field-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.76rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .field,
+      .input,
+      .select,
+      textarea {
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 11px 12px;
+        outline: none;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+      .field:focus,
+      .input:focus,
+      .select:focus,
+      textarea:focus {
+        border-color: var(--border-strong);
+        box-shadow: 0 0 0 3px rgba(124,108,255,0.12);
+      }
+
+      .toggle-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .toggle-ghost {
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--muted);
+        border-radius: 10px;
+        padding: 10px;
+        cursor: pointer;
+      }
+      .toggle-ghost.active {
+        background: var(--chip-active);
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .stat-card {
+        background: var(--card-soft);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 10px;
+        text-align: center;
+      }
+      .stat-card strong {
+        display: block;
+        font-size: 1.7rem;
+        line-height: 1;
+        margin-bottom: 4px;
+        letter-spacing: -0.05em;
+      }
+      .stat-card span {
+        color: var(--muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .main-panel {
+        padding-top: 14px;
+      }
+      .toolbar-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+      }
+      .toolbar-inline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .view-toggle {
+        display: inline-flex;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 4px;
+      }
+      .view-btn {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        border-radius: 8px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+      .view-btn.active {
+        background: var(--chip-active);
+        color: var(--text);
+      }
+
+      .app-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+      }
+      .app-grid.list-view {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      }
+
+      .app-card {
+        position: relative;
+        background: linear-gradient(180deg, var(--card), var(--card-soft));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px 14px 14px;
+        min-height: 176px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+      }
+      .app-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top left, rgba(124,108,255,0.18), transparent 50%);
+        pointer-events: none;
+      }
+      .app-card.favorite {
+        border-color: rgba(245, 158, 11, 0.28);
+      }
+      .app-card.list-style {
+        display: flex;
+        align-items: center;
+        min-height: 110px;
+        gap: 14px;
+      }
+      .app-card .card-top {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .app-icon-tile {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: rgba(124,108,255,0.12);
+        border: 1px solid rgba(148,163,184,0.2);
+        display: grid;
+        place-items: center;
+        color: var(--text);
+        overflow: hidden;
+      }
+      .app-icon-tile img,
+      .app-icon-tile svg {
+        width: 24px;
+        height: 24px;
+      }
+      .app-icon-tile img {
+        object-fit: cover;
+        border-radius: 10px;
+      }
+      .card-menu-toggle {
+        background: rgba(148, 163, 184, 0.07);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        color: var(--muted);
+        position: relative;
+        z-index: 2;
+      }
+      .card-menu {
+        position: absolute;
+        right: 14px;
+        top: 52px;
+        background: var(--panel-strong);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        min-width: 130px;
+        padding: 8px;
+        display: none;
+        z-index: 5;
+      }
+      .app-card.open-menu .card-menu { display: block; }
+      .menu-item {
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        color: var(--text);
+        text-align: left;
+        padding: 8px 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .menu-item:hover { background: rgba(148,163,184,0.08); }
+      .menu-item.danger:hover { background: rgba(239,68,68,0.08); color: #ff8a8a; }
+
+      .app-body {
+        position: relative;
+        z-index: 1;
+        margin-top: 16px;
+      }
+      .app-body h4 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 1rem;
+        line-height: 1.25;
+      }
+      .app-body p {
+        margin: 6px 0 10px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        background: rgba(148,163,184,0.08);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      .app-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .favorite-toggle {
+        border: none;
+        background: rgba(245,158,11,0.08);
+        border-radius: 9px;
+        color: #fbbf24;
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+      }
+      .favorite-toggle.inactive {
+        color: var(--muted);
+        background: rgba(148,163,184,0.08);
+      }
+      .app-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(124,108,255,0.08);
+        border-radius: 999px;
+        border: 1px solid rgba(124,108,255,0.2);
+        color: var(--text);
+        padding: 6px 8px;
+        font-size: 0.74rem;
+      }
+
+      .empty-state {
+        background: var(--card-soft);
+        border: 1px dashed var(--border);
+        border-radius: 18px;
+        padding: 30px 18px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty-state h4 {
+        margin: 8px 0 6px;
+        color: var(--text);
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(15, 23, 42, 0.66);
+        padding: 18px;
+      }
+      .modal.open { display: grid; place-items: center; }
+      .modal-panel {
+        width: min(720px, 100%);
+        max-height: 90vh;
+        overflow: auto;
+        background: var(--panel-strong);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+      .modal-header h3 {
+        margin: 0;
+        font-size: 1.3rem;
+      }
+      .close-btn {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .field-wide { grid-column: 1 / -1; }
+      .helper-text {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.76rem;
+      }
+
+      .icon-picker-wrapper {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .icon-picker-search {
+        margin-bottom: 10px;
+      }
+      .icon-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+        gap: 8px;
+        max-height: 180px;
+        overflow: auto;
+      }
+      .icon-option {
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        background: transparent;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+      }
+      .icon-option.selected {
+        border-color: var(--border-strong);
+        background: rgba(124,108,255,0.12);
+      }
+      .icon-upload-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .mini-button {
+        border: 1px solid var(--border);
+        background: var(--panel-strong);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+      .mini-button.primary {
+        background: var(--chip-active);
+        border-color: var(--border-strong);
+      }
+      .custom-icon-preview {
+        width: 52px;
+        height: 52px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: rgba(148,163,184,0.08);
+      }
+      .custom-icon-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .secondary-btn {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      .toast-container {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 120;
+      }
+      .toast {
+        min-width: 230px;
+        max-width: 320px;
+        background: var(--panel-strong);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .toast-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .toast-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        background: rgba(56, 211, 159, 0.12);
+        color: var(--saved);
+      }
+      .toast.error .toast-icon {
+        background: rgba(239,68,68,0.12);
+        color: var(--danger);
+      }
+      .toast strong {
+        display: block;
+        font-size: 0.82rem;
+      }
+      .toast small {
+        display: block;
+        color: var(--muted);
+      }
+      .toast-action {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        border-radius: 9px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+
+      @media (max-width: 920px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .topbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .topbar-actions {
+          justify-content: space-between;
+        }
+      }
+      @media (max-width: 540px) {
+        .app-shell { width: min(100% - 18px, 1220px); }
+        .form-grid { grid-template-columns: 1fr; }
+        .app-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7.5A2.5 2.5 0 0 1 9.5 5h8A2.5 2.5 0 0 1 20 7.5v8A2.5 2.5 0 0 1 17.5 18h-8A2.5 2.5 0 0 1 7 15.5z"/><path d="M10 8h6M10 12h6M10 16h4"/></svg>
+          </div>
+          <div class="brand-copy">
+            <strong>StudyHub</strong>
+            <span>Apps collection</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <div id="savedIndicator" class="saved-indicator" aria-live="polite">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 9.5 17 19 7.5"/></svg>
+            Saved ✓
+          </div>
+          <button id="themeToggle" class="action-btn" type="button" aria-label="Toggle theme">
+            <span id="themeLabel">Dark</span>
+          </button>
+          <button id="exportBtn" class="action-btn" type="button">Export</button>
+          <button id="importBtn" class="action-btn" type="button">Import</button>
+          <button id="resetBtn" class="action-btn" type="button">Reset</button>
+          <button id="addAppBtn" class="action-btn primary-btn" type="button">+ Add app</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidepanel">
+          <div class="panel-header">
+            <h3>Browse</h3>
+          </div>
+
+          <div class="search-wrap">
+            <span class="search-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+            </span>
+            <input id="searchInput" type="search" placeholder="Search apps..." aria-label="Search apps" />
+          </div>
+
+          <div class="filter-stack" id="favoritesFilter"></div>
+
+          <div class="sidegrid">
+            <div>
+              <label class="field-label" for="categoryFilter">Category</label>
+              <select id="categoryFilter" class="select" aria-label="Filter by category">
+                <option value="all">All categories</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="field-label" for="sortSelect">Sort</label>
+              <select id="sortSelect" class="select" aria-label="Sort apps">
+                <option value="updated-desc">Recently updated</option>
+                <option value="name-asc">Name A–Z</option>
+                <option value="favorite-first">Favorites first</option>
+                <option value="created-desc">Newest first</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="field-label">Pricing</label>
+              <div class="toggle-row">
+                <button type="button" class="toggle-ghost active" data-pricing="monthly">Monthly</button>
+                <button type="button" class="toggle-ghost" data-pricing="yearly">Yearly</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="field-label">View</label>
+              <div class="toggle-row">
+                <button type="button" class="toggle-ghost active" data-view="grid">Grid</button>
+                <button type="button" class="toggle-ghost" data-view="list">List</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-header" style="margin-top: 18px; margin-bottom: 12px;">
+            <h3>Snapshot</h3>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <strong id="statApps">0</strong>
+              <span>Apps</span>
+            </div>
+            <div class="stat-card">
+              <strong id="statFavorites">0</strong>
+              <span>Favs</span>
+            </div>
+            <div class="stat-card">
+              <strong id="statCategories">0</strong>
+              <span>Categories</span>
+            </div>
+            <div class="stat-card">
+              <strong id="statUpdated">0</strong>
+              <span>Updated</span>
+            </div>
+          </div>
+        </aside>
+
+        <main class="main-panel">
+          <div class="toolbar-row">
+            <div class="toolbar-inline">
+              <h2 style="margin: 0; font-size: 1.2rem; letter-spacing: -0.03em;">All bookmarks</h2>
+            </div>
+            <div class="toolbar-inline">
+              <div class="view-toggle" aria-label="View mode selector">
+                <button type="button" class="view-btn active" data-view="grid" aria-label="Grid view">Grid</button>
+                <button type="button" class="view-btn" data-view="list" aria-label="List view">List</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="appGrid" class="app-grid" aria-live="polite"></div>
+        </main>
+      </div>
+    </div>
+
+    <div id="appModal" class="modal" aria-hidden="true">
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header">
+          <h3 id="modalTitle">Add app</h3>
+          <button type="button" class="close-btn" data-close-modal="app">×</button>
+        </div>
+
+        <form id="appForm">
+          <div class="form-grid">
+            <div class="field-wide">
+              <label class="field-label" for="appName">Name</label>
+              <input id="appName" class="field" name="name" maxlength="80" required />
+            </div>
+
+            <div class="field-wide">
+              <label class="field-label" for="appDescription">Description</label>
+              <textarea id="appDescription" name="description" maxlength="260" placeholder="Short description"></textarea>
+            </div>
+
+            <div>
+              <label class="field-label" for="appCategory">Category</label>
+              <select id="appCategory" class="select" name="category" required></select>
+            </div>
+
+            <div>
+              <label class="field-label" for="appTags">Tags</label>
+              <input id="appTags" class="field" name="tags" placeholder="productivity, ai" />
+            </div>
+
+            <div class="field-wide">
+              <label class="field-label" for="appUrl">URL</label>
+              <input id="appUrl" class="field" name="url" type="url" placeholder="https://example.com" required />
+            </div>
+
+            <div class="field-wide">
+              <label class="field-label">Icon</label>
+              <div class="icon-picker-wrapper">
+                <div class="custom-icon-preview" id="selectedIconPreview" aria-hidden="true"></div>
+                <div class="icon-picker-search">
+                  <input id="iconSearchInput" class="field" type="search" placeholder="Search icons..." />
+                </div>
+                <div id="iconPickerGrid" class="icon-picker-grid" aria-label="Icon picker"></div>
+                <div class="icon-upload-row">
+                  <label class="mini-button primary" for="customIconUpload">Upload custom icon</label>
+                  <input id="customIconUpload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden />
+                  <button type="button" class="mini-button" id="faviconFetchBtn">Auto-fetch favicon</button>
+                  <button type="button" class="mini-button" id="monogramBtn">Monogram</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-wide">
+              <label class="field-label">Preferences</label>
+              <div class="toggle-row">
+                <button type="button" class="toggle-ghost active" id="favoriteToggleField" data-favorite="true">Favorite</button>
+                <button type="button" class="toggle-ghost" id="provisionModeBtn" data-provision="false">Provision form</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="action-btn secondary-btn" data-close-modal="app">Cancel</button>
+            <button type="submit" class="action-btn primary-btn">Save app</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="importModal" class="modal" aria-hidden="true">
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+        <div class="modal-header">
+          <h3 id="importTitle">Import data</h3>
+          <button type="button" class="close-btn" data-close-modal="import">×</button>
+        </div>
+
+        <div class="upload-composer">
+          <input id="importFileInput" type="file" accept="application/json,.json" />
+          <div class="helper-text">Choose a JSON export to merge or replace your current collection.</div>
+          <div id="importPreview" class="helper-text" style="margin-top: 16px; min-height: 50px; color: var(--text);"></div>
+          <div class="modal-actions">
+            <button type="button" class="action-btn secondary-btn" data-close-modal="import">Cancel</button>
+            <button type="button" id="mergeImportBtn" class="action-btn">Merge</button>
+            <button type="button" id="replaceImportBtn" class="action-btn primary-btn">Replace</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+    <script type="module" src="./assets/js/app.js"></script>
+  </body>
+</html>
