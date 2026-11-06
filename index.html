@@ -1,686 +1,534 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Study Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0d0f1a;
-      --surface: #141629;
-      --card: #1b1e35;
-      --card-hover: #212540;
-      --border: rgba(255,255,255,0.07);
-      --border-hover: rgba(255,255,255,0.15);
-      --text: #e8eaf6;
-      --muted: #8b90b8;
-      --accent: #6c63ff;
-      --accent2: #00d4aa;
-      --accent3: #ff6b8a;
-      --pill-bg: rgba(108,99,255,0.12);
-      --pill-text: #9d97ff;
-      --shadow: 0 8px 32px rgba(0,0,0,0.45);
-    }
-    body.light {
-      --bg: #f0f2ff;
-      --surface: #ffffff;
-      --card: #ffffff;
-      --card-hover: #f5f6ff;
-      --border: rgba(108,99,255,0.15);
-      --border-hover: rgba(108,99,255,0.35);
-      --text: #1a1c2e;
-      --muted: #6b6f9a;
-      --accent: #5046e5;
-      --accent2: #00b896;
-      --accent3: #e0355a;
-      --pill-bg: rgba(80,70,229,0.08);
-      --pill-text: #5046e5;
-      --shadow: 0 4px 20px rgba(80,70,229,0.10);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="App Collection is a curated, filterable directory of modern tools and digital workspaces designed around the Lumen Edge interface system."
+    />
+    <meta name="theme-color" content="#0b0c0f" />
+    <meta property="og:title" content="App Collection" />
+    <meta
+      property="og:description"
+      content="Professional product experience for systems, capabilities, and workspace provisioning."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>App Collection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+  </head>
+  <body>
+    <a class="skip-link button button--secondary" href="#main-content">Skip to content</a>
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    <header class="site-header" id="top">
+      <div class="container site-header__inner">
+        <a class="brand" href="#top" aria-label="App Collection home">
+          <span class="brand__mark" aria-hidden="true">L</span>
+          <span class="brand__wordmark">App Collection</span>
+        </a>
 
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
-    }
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a class="site-nav__link is-active" href="#system">System</a>
+          <a class="site-nav__link" href="#capabilities">Capabilities</a>
+          <a class="site-nav__link" href="#workbench">Workbench</a>
+          <a class="site-nav__link" href="#plans">Plans</a>
+        </nav>
 
-    /* ---- HEADER ---- */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .logo-icon {
-      width: 38px;
-      height: 38px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-    .logo-text {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 20px;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .logo-sub {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .theme-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-family: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .theme-btn:hover {
-      border-color: var(--border-hover);
-      color: var(--text);
-    }
-
-    /* ---- LAYOUT ---- */
-    .layout {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 20px;
-      padding: 24px 28px;
-      max-width: 1400px;
-    }
-    .main {}
-    .sidebar {}
-
-    /* ---- SECTION ---- */
-    .section { margin-bottom: 28px; }
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-    }
-    .section-title .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-    .add-btn {
-      background: var(--pill-bg);
-      color: var(--pill-text);
-      border: none;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .add-btn:hover { opacity: 0.8; }
-
-    /* ---- GRID ---- */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap: 12px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      height: 110px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), border-color 0.2s, background 0.2s;
-      text-align: center;
-      padding: 10px 8px;
-      gap: 8px;
-    }
-    .card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(108,99,255,0.06), rgba(0,212,170,0.04));
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .card:hover::before { opacity: 1; }
-    .card:hover {
-      transform: translateY(-5px) scale(1.03);
-      border-color: var(--border-hover);
-      background: var(--card-hover);
-      box-shadow: var(--shadow);
-    }
-    .card img {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
-    }
-    .card-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-    }
-    .remove-btn {
-      position: absolute;
-      top: 7px;
-      right: 7px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--accent3);
-      border: none;
-      color: white;
-      font-size: 13px;
-      line-height: 20px;
-      text-align: center;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .card:hover .remove-btn { opacity: 1; }
-
-    /* ---- SIDEBAR ---- */
-    .sidebar-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    .sidebar-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* ---- TASKS ---- */
-    .task-input-wrap {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-    .task-input-wrap input {
-      flex: 1;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 9px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .task-input-wrap input:focus { border-color: var(--accent); }
-    .task-input-wrap input::placeholder { color: var(--muted); }
-    .task-add-btn {
-      background: var(--accent);
-      border: none;
-      color: white;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.2s;
-      flex-shrink: 0;
-    }
-    .task-add-btn:hover { opacity: 0.85; }
-
-    .task-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 8px;
-      transition: border-color 0.2s;
-    }
-    .task-item:hover { border-color: var(--border-hover); }
-    .task-check {
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--border-hover);
-      border-radius: 50%;
-      flex-shrink: 0;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .task-check.done {
-      background: var(--accent2);
-      border-color: var(--accent2);
-    }
-    .task-check.done::after {
-      content: '✓';
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .task-text {
-      flex: 1;
-      font-size: 13px;
-      color: var(--text);
-      transition: all 0.2s;
-    }
-    .task-text.done { text-decoration: line-through; color: var(--muted); }
-    .task-del {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 16px;
-      padding: 2px;
-      border-radius: 4px;
-      transition: color 0.2s;
-      line-height: 1;
-    }
-    .task-del:hover { color: var(--accent3); }
-
-    /* ---- STATS MINI ---- */
-    .stats-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .stat-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 14px;
-      text-align: center;
-    }
-    .stat-num {
-      font-family: 'Syne', sans-serif;
-      font-size: 26px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-
-    /* ---- CLOCK ---- */
-    .clock-wrap {
-      text-align: center;
-      padding: 4px 0 8px;
-    }
-    .clock {
-      font-family: 'Syne', sans-serif;
-      font-size: 36px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -1px;
-    }
-    .date-str { font-size: 12px; color: var(--muted); margin-top: 2px; font-weight: 500; }
-
-    /* ---- RESPONSIVE ---- */
-    @media (max-width: 860px) {
-      .layout { grid-template-columns: 1fr; padding: 16px; }
-      .sidebar { order: -1; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="logo">
-      <div class="logo-icon">📚</div>
-      <div>
-        <div class="logo-text">StudyHub</div>
-        <div class="logo-sub">Your learning command center</div>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button class="theme-btn" onclick="toggleTheme()">
-        <span id="themeIcon">☀️</span> <span id="themeLabel">Light</span>
-      </button>
-    </div>
-  </header>
-
-  <div class="layout">
-    <!-- MAIN -->
-    <div class="main">
-
-      <!-- Custom -->
-      <div class="section" id="customSection" style="display:none">
-        <div class="section-header">
-          <div class="section-title"><span class="dot" style="background:var(--accent3)"></span> My Bookmarks</div>
+        <div class="header-actions">
+          <button class="button button--secondary button--small" type="button">Docs</button>
+          <button class="button button--primary button--small" type="button">Sign in</button>
+          <button class="icon-button menu-toggle" type="button" aria-label="Open navigation" aria-controls="mobile-drawer">
+            <span data-icon="menu" aria-hidden="true"></span>
+          </button>
         </div>
-        <div class="grid" id="customGrid"></div>
       </div>
+    </header>
 
-      <!-- AI -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title"><span class="dot" style="background:#6c63ff"></span> Search & AI</div>
-          <button class="add-btn" onclick="addWebpage()">+ Add site</button>
-        </div>
-        <div class="grid" id="aiGrid"></div>
-      </div>
-
-      <!-- Dev -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title"><span class="dot" style="background:#00d4aa"></span> Dev & Code</div>
-        </div>
-        <div class="grid" id="devGrid"></div>
-      </div>
-
-      <!-- Learn -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title"><span class="dot" style="background:#f7c948"></span> Learning & Internships</div>
-        </div>
-        <div class="grid" id="learnGrid"></div>
-      </div>
-
-      <!-- Career -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title"><span class="dot" style="background:#ff6b8a"></span> Career Portals</div>
-        </div>
-        <div class="grid" id="careerGrid"></div>
-      </div>
-
-      <!-- Social -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title"><span class="dot" style="background:#fc9d4f"></span> Social & Entertainment</div>
-        </div>
-        <div class="grid" id="socialGrid"></div>
-      </div>
-
+    <div class="mobile-drawer" id="mobile-drawer" aria-hidden="true">
+      <nav class="mobile-drawer__nav" aria-label="Mobile navigation">
+        <a href="#system">System</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#workbench">Workbench</a>
+        <a href="#plans">Plans</a>
+      </nav>
     </div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+    <main id="main-content">
+      <section class="section hero" id="system">
+        <div class="container">
+          <div class="hero__layout" data-reveal>
+            <div class="hero__content">
+              <p class="eyebrow">Lumen Edge · v1.0 quietly online</p>
+              <h1>
+                Interfaces that read as
+                <span class="gradient-text">engineered glass</span>
+                at dusk.
+              </h1>
+              <p class="hero__copy">
+                A sub-chromatic system for product teams who want clarity without color noise.
+                Soft radial surfaces, hairline rims, and a single luminous horizon line create a calm,
+                confident visual rhythm.
+              </p>
 
-      <!-- Clock -->
-      <div class="sidebar-card">
-        <div class="clock-wrap">
-          <div class="clock" id="clock">00:00:00</div>
-          <div class="date-str" id="dateStr"></div>
-        </div>
-      </div>
+              <div class="hero__actions cluster">
+                <button class="button button--primary" type="button">
+                  Start a workspace
+                  <span aria-hidden="true">↗</span>
+                </button>
+                <button class="button button--secondary" type="button">
+                  <span aria-hidden="true">▷</span>
+                  Watch the tour
+                </button>
+              </div>
+            </div>
 
-      <!-- Stats -->
-      <div class="sidebar-card">
-        <div class="stats-row">
-          <div class="stat-box">
-            <div class="stat-num" id="sitesCount">0</div>
-            <div class="stat-label">Sites</div>
+            <div class="signal-card card" aria-label="Live system signal dashboard">
+              <div class="signal-card__header">
+                <div class="eyebrow eyebrow--compact">Signal</div>
+                <div class="segmented" role="tablist" aria-label="Signal range">
+                  <button class="segmented__button is-active" type="button" data-range="24h" aria-pressed="true">24h</button>
+                  <button class="segmented__button" type="button" data-range="7d" aria-pressed="false">7d</button>
+                  <button class="segmented__button" type="button" data-range="30d" aria-pressed="false">30d</button>
+                </div>
+              </div>
+
+              <div class="signal-card__grid">
+                <article class="metric-tile">
+                  <span class="metric-tile__label">Active sessions</span>
+                  <strong class="metric-value" data-count="12408">0</strong>
+                </article>
+                <article class="metric-tile">
+                  <span class="metric-tile__label">Latency</span>
+                  <strong class="metric-value" data-count="38">0</strong>
+                </article>
+              </div>
+
+              <svg class="sparkline" viewBox="0 0 340 108" aria-label="Sparkline over time" role="img">
+                <defs>
+                  <linearGradient id="sparklineGlow" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0%" stop-color="rgba(255,255,255,0.4)" />
+                    <stop offset="50%" stop-color="rgba(255,255,255,0.9)" />
+                    <stop offset="100%" stop-color="rgba(255,255,255,0.55)" />
+                  </linearGradient>
+                </defs>
+                <path class="sparkline__area" d="M 0 96 L 32 76 L 63 72 L 96 62 L 128 64 L 160 54 L 192 58 L 224 42 L 256 34 L 288 28 L 320 18 L 340 22 L 340 108 L 0 108 Z"></path>
+                <path class="sparkline__line" d="M 0 96 L 32 76 L 63 72 L 96 62 L 128 64 L 160 54 L 192 58 L 224 42 L 256 34 L 288 28 L 320 18 L 340 22"></path>
+              </svg>
+            </div>
           </div>
-          <div class="stat-box">
-            <div class="stat-num" id="tasksCount">0</div>
-            <div class="stat-label">Tasks</div>
+
+          <div class="stats-row" data-reveal>
+            <div class="stat-item">
+              <strong class="stat-item__value" data-count="42">0</strong>
+              <span class="stat-item__label">Components</span>
+            </div>
+            <div class="stat-item">
+              <strong class="stat-item__value" data-count="7">0</strong>
+              <span class="stat-item__label">7px / 14px radii</span>
+            </div>
+            <div class="stat-item">
+              <strong class="stat-item__value" data-count="1">0</strong>
+              <span class="stat-item__label">1.00s ease</span>
+            </div>
+            <div class="stat-item">
+              <strong class="stat-item__value" data-count="0">0</strong>
+              <span class="stat-item__label">No chromatic accents</span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Tasks -->
-      <div class="sidebar-card">
-        <div class="sidebar-title">📝 Tasks</div>
-        <div class="task-input-wrap">
-          <input type="text" id="taskInput" placeholder="Add a task…" onkeypress="if(event.key==='Enter') addTask()">
-          <button class="task-add-btn" onclick="addTask()">+</button>
+      <section class="section" id="capabilities">
+        <div class="container">
+          <div class="section__heading" data-reveal>
+            <div>
+              <p class="eyebrow">Capabilities</p>
+              <h2>Four reusable signals, one quiet system.</h2>
+            </div>
+            <p class="section__description">
+              Lumen Edge brings a calm, disciplined interface language to product teams—built for clarity,
+              speed, and signal-rich focus without visual clutter.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card card card--interactive" data-reveal>
+              <div class="feature-card__body">
+                <span class="feature-card__icon" data-icon="layers" data-size="18" aria-hidden="true"></span>
+                <h3>Radial surfaces</h3>
+                <p>An ellipse-at-bottom treatment gives every panel a soft, illuminated foundation.</p>
+                <ul class="feature-card__meta">
+                  <li>Surface</li>
+                  <li>Gradient</li>
+                  <li>Depth</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="feature-card card card--interactive" data-reveal>
+              <div class="feature-card__body">
+                <span class="feature-card__icon" data-icon="grid" data-size="18" aria-hidden="true"></span>
+                <h3>Hairline rims</h3>
+                <p>Every control uses crisp borders and faint lifts to add precision without noise.</p>
+                <ul class="feature-card__meta">
+                  <li>Inset</li>
+                  <li>Rims</li>
+                  <li>Hover</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="feature-card card card--interactive" data-reveal>
+              <div class="feature-card__body">
+                <span class="feature-card__icon" data-icon="horizon" data-size="18" aria-hidden="true"></span>
+                <h3>Horizon line</h3>
+                <p>A single 70%-wide guide creates a calm signal for focus, hover, and active states.</p>
+                <ul class="feature-card__meta">
+                  <li>Focus</li>
+                  <li>Motion</li>
+                  <li>State</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="feature-card card card--interactive" data-reveal>
+              <div class="feature-card__body">
+                <span class="feature-card__icon" data-icon="spark" data-size="18" aria-hidden="true"></span>
+                <h3>Lumen focus</h3>
+                <p>Keyboard and pointer emphasis glow softly without introducing chromatic distortion.</p>
+                <ul class="feature-card__meta">
+                  <li>Focus</li>
+                  <li>Glow</li>
+                  <li>Light</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="feature-card card card--interactive" data-reveal>
+              <div class="feature-card__body">
+                <span class="feature-card__icon" data-icon="palette" data-size="18" aria-hidden="true"></span>
+                <h3>Sub-chromatic palette</h3>
+                <p>Hierarchy is built through luminance, not hue—creating structure with clarity and restraint.</p>
+                <ul class="feature-card__meta">
+                  <li>Monochrome</li>
+                  <li>Value</li>
+                  <li>Scale</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="feature-card card card--interactive" data-reveal>
+              <div class="feature-card__body">
+                <span class="feature-card__icon" data-icon="shield" data-size="18" aria-hidden="true"></span>
+                <h3>One signature ease</h3>
+                <p>Motion is smooth, measured, and consistent so interfaces feel engineered rather than noisy.</p>
+                <ul class="feature-card__meta">
+                  <li>Timing</li>
+                  <li>Ease</li>
+                  <li>Calm</li>
+                </ul>
+              </div>
+            </article>
+          </div>
         </div>
-        <div id="taskList"></div>
+      </section>
+
+      <section class="section" id="workbench">
+        <div class="container">
+          <div class="panel panel--workbench" data-reveal>
+            <div class="panel__header">
+              <p class="eyebrow">Workbench</p>
+              <button class="button button--secondary button--small" type="button">Engage</button>
+            </div>
+            <div class="panel__body">
+              <div class="workbench-copy">
+                <h3>Provision an environment</h3>
+                <p>
+                  Tune a workspace, use the quiet control surface, and deploy with a clear visual status.
+                </p>
+              </div>
+
+              <div class="mini-form" aria-label="Environment provisioning form">
+                <label class="field">
+                  <span class="field__label">Workspace</span>
+                  <input class="input" type="text" value="aurora-deck" aria-label="Workspace name" />
+                </label>
+                <div class="field">
+                  <span class="field__label">Mode</span>
+                  <div class="segmented" role="tablist" aria-label="Environment mode">
+                    <button class="segmented__button is-active" type="button" aria-pressed="true">Cloud</button>
+                    <button class="segmented__button" type="button" aria-pressed="false">Edge</button>
+                    <button class="segmented__button" type="button" aria-pressed="false">Local</button>
+                  </div>
+                </div>
+                <label class="field">
+                  <span class="field__label">Owner</span>
+                  <input class="input" type="email" value="you@lumen.dev" aria-label="Owner email" />
+                </label>
+                <div class="toggle-row">
+                  <button class="toggle" type="button" aria-checked="true">
+                    <span class="toggle__track"><span class="toggle__thumb"></span></span>
+                    <span>Encrypt at rest</span>
+                  </button>
+                  <button class="toggle" type="button" aria-checked="false">
+                    <span class="toggle__track"><span class="toggle__thumb"></span></span>
+                    <span>Autoscale</span>
+                  </button>
+                </div>
+                <div class="panel__actions">
+                  <button class="button button--secondary" type="button">Cancel</button>
+                  <button class="button button--primary" type="button">Provision</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="plans">
+        <div class="container">
+          <div class="section__heading" data-reveal>
+            <div>
+              <p class="eyebrow">Plans</p>
+              <h2>Three tiers, one luminous edge.</h2>
+            </div>
+            <div class="plan-toggle" aria-label="Billing toggle">
+              <button class="segmented__button is-active" type="button" aria-pressed="true">Monthly</button>
+              <button class="segmented__button" type="button" aria-pressed="false">Yearly</button>
+            </div>
+          </div>
+
+          <div class="pricing-grid">
+            <article class="pricing-card card" data-reveal>
+              <span class="pricing-card__label">Studio</span>
+              <h3>$0</h3>
+              <p>For designers prototyping the language of product clarity.</p>
+              <ul>
+                <li>Core templates</li>
+                <li>Lightweight components</li>
+                <li>1 workspace</li>
+              </ul>
+              <button class="button button--secondary button--full" type="button">Start free</button>
+            </article>
+
+            <article class="pricing-card card card--featured" data-reveal>
+              <span class="pricing-card__badge">Most chosen</span>
+              <span class="pricing-card__label">Atelier</span>
+              <h3>$24</h3>
+              <p>For teams shipping polished experiences with signal-rich systems.</p>
+              <ul>
+                <li>Everything in Studio</li>
+                <li>Token layer controls</li>
+                <li>Horizon Panel included</li>
+              </ul>
+              <button class="button button--primary button--full" type="button">Get started</button>
+            </article>
+
+            <article class="pricing-card card" data-reveal>
+              <span class="pricing-card__label">Observatory</span>
+              <h3>Custom</h3>
+              <p>For organizations with bespoke systems, security requirements, and scale.</p>
+              <ul>
+                <li>Advanced onboarding</li>
+                <li>Shared design standards</li>
+                <li>Custom support</li>
+              </ul>
+              <button class="button button--secondary button--full" type="button">Talk to sales</button>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="cta-banner card" data-reveal>
+            <div>
+              <p class="eyebrow">Move forward</p>
+              <h2>Move from color noise to a single line of light.</h2>
+            </div>
+            <div class="cta-banner__actions cluster">
+              <button class="button button--primary" type="button">Open a workspace</button>
+              <button class="button button--secondary" type="button">Read the spec</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container site-footer__inner">
+        <div class="brand brand--footer">
+          <span class="brand__mark" aria-hidden="true">L</span>
+          <span class="brand__wordmark">Lumen Edge · Design System v1.0</span>
+        </div>
+        <nav class="site-footer__nav" aria-label="Footer navigation">
+          <a href="#system">Spec</a>
+          <a href="#capabilities">Components</a>
+          <a href="#workbench">Motion</a>
+          <a href="#plans">Changelog</a>
+        </nav>
       </div>
+    </footer>
 
-    </div>
-  </div>
-
-  <script>
-    // ---- THEME ----
-    let isLight = false;
-    function toggleTheme() {
-      isLight = !isLight;
-      document.body.classList.toggle("light", isLight);
-      document.getElementById("themeIcon").textContent = isLight ? "🌙" : "☀️";
-      document.getElementById("themeLabel").textContent = isLight ? "Dark" : "Light";
-    }
-
-    // ---- CLOCK ----
-    function updateClock() {
-      const now = new Date();
-      const h = String(now.getHours()).padStart(2,'0');
-      const m = String(now.getMinutes()).padStart(2,'0');
-      const s = String(now.getSeconds()).padStart(2,'0');
-      document.getElementById("clock").textContent = `${h}:${m}:${s}`;
-      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      document.getElementById("dateStr").textContent =
-        `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // ---- BUILTIN SITES ----
-    const builtinSections = {
-      aiGrid: [
-        { name: "Google", url: "https://google.com" },
-        { name: "Gemini", url: "https://gemini.google.com" },
-        { name: "DeepSeek", url: "https://chat.deepseek.com" },
-        { name: "ChatGPT", url: "https://chat.openai.com" },
-        { name: "Emergent AI", url: "https://app.emergent.sh" },
-      ],
-      devGrid: [
-        { name: "GitHub", url: "https://github.com" },
-        { name: "HuggingFace", url: "https://huggingface.co" },
-        { name: "YouTube", url: "https://youtube.com" },
-      ],
-      learnGrid: [
-        { name: "AICTE Internship", url: "https://internship.aicte-india.org" },
-        { name: "Skill India", url: "https://skillindia.gov.in" },
-        { name: "Google Arcade", url: "https://go.cloudskillsboost.google/arcade" },
-      ],
-      careerGrid: [
-        { name: "IBM SkillsBuild", url: "https://skillsbuild.org" },
-        { name: "Amazon Jobs", url: "https://www.amazon.jobs" },
-        { name: "Google Careers", url: "https://careers.google.com" },
-        { name: "Meta Careers", url: "https://www.metacareers.com" },
-      ],
-      socialGrid: [
-        { name: "Instagram", url: "https://instagram.com" },
-        { name: "Facebook", url: "https://facebook.com" },
-        { name: "Netflix", url: "https://netflix.com" },
-      ],
-    };
-
-    function getDomain(u) { try { return new URL(u).hostname; } catch { return ""; } }
-    function favicon(domain) { return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`; }
-
-    function makeCard(page, onRemove) {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.onclick = () => window.open(page.url, "_blank");
-      const img = document.createElement("img");
-      img.src = favicon(getDomain(page.url));
-      img.alt = page.name;
-      const name = document.createElement("div");
-      name.className = "card-name";
-      name.textContent = page.name;
-      if (onRemove) {
-        const btn = document.createElement("button");
-        btn.className = "remove-btn";
-        btn.textContent = "×";
-        btn.onclick = e => { e.stopPropagation(); onRemove(); };
-        div.appendChild(btn);
-      }
-      div.appendChild(img);
-      div.appendChild(name);
-      return div;
-    }
-
-    function renderBuiltins() {
-      let total = 0;
-      for (const [id, pages] of Object.entries(builtinSections)) {
-        const grid = document.getElementById(id);
-        grid.innerHTML = "";
-        pages.forEach(p => grid.appendChild(makeCard(p, null)));
-        total += pages.length;
-      }
-      return total;
-    }
-
-    // ---- CUSTOM ----
-    let customPages = JSON.parse(localStorage.getItem("customPages") || "[]");
-
-    function renderCustom() {
-      const grid = document.getElementById("customGrid");
-      const sec = document.getElementById("customSection");
-      grid.innerHTML = "";
-      if (!customPages.length) { sec.style.display = "none"; return; }
-      sec.style.display = "block";
-      customPages.forEach((p, i) => {
-        grid.appendChild(makeCard(p, () => {
-          customPages.splice(i, 1);
-          localStorage.setItem("customPages", JSON.stringify(customPages));
-          renderCustom();
-          updateStats();
-        }));
-      });
-    }
-
-    function addWebpage() {
-      const name = prompt("Site name:");
-      const url = prompt("URL (include https://):");
-      if (name && url) {
-        customPages.push({ name, url });
-        localStorage.setItem("customPages", JSON.stringify(customPages));
-        renderCustom();
-        updateStats();
-      }
-    }
-
-    // ---- TASKS ----
-    let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-
-    function renderTasks() {
-      const list = document.getElementById("taskList");
-      list.innerHTML = "";
-      tasks.forEach((t, i) => {
-        const div = document.createElement("div");
-        div.className = "task-item";
-        const chk = document.createElement("div");
-        chk.className = "task-check" + (t.done ? " done" : "");
-        chk.onclick = () => { tasks[i].done = !tasks[i].done; save(); renderTasks(); updateStats(); };
-        const span = document.createElement("span");
-        span.className = "task-text" + (t.done ? " done" : "");
-        span.textContent = typeof t === "string" ? t : t.text;
-        const del = document.createElement("button");
-        del.className = "task-del";
-        del.textContent = "×";
-        del.onclick = () => { tasks.splice(i, 1); save(); renderTasks(); updateStats(); };
-        div.appendChild(chk);
-        div.appendChild(span);
-        div.appendChild(del);
-        list.appendChild(div);
-      });
-    }
-
-    function save() { localStorage.setItem("tasks", JSON.stringify(tasks)); }
-
-    function addTask() {
-      const inp = document.getElementById("taskInput");
-      if (inp.value.trim()) {
-        tasks.push({ text: inp.value.trim(), done: false });
-        inp.value = "";
-        save();
-        renderTasks();
-        updateStats();
-      }
-    }
-
-    function updateStats() {
-      const builtinCount = Object.values(builtinSections).reduce((a, b) => a + b.length, 0);
-      document.getElementById("sitesCount").textContent = builtinCount + customPages.length;
-      document.getElementById("tasksCount").textContent = tasks.length;
-    }
-
-    // Migrate old string tasks
-    tasks = tasks.map(t => typeof t === "string" ? { text: t, done: false } : t);
-
-    renderBuiltins();
-    renderCustom();
-    renderTasks();
-    updateStats();
-  </script>
-</body>
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
